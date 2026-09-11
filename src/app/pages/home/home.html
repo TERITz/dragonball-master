@@ -1,0 +1,362 @@
+<div class="min-h-dvh bg-zinc-950 text-zinc-100">
+  <header class="border-b border-orange-500/30 bg-zinc-900/80 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-orange-400">Dragon Ball</h1>
+        <p class="mt-1 text-sm text-zinc-400">
+          ข้อมูลจาก
+          <a
+            class="text-orange-300 underline decoration-orange-500/50 underline-offset-2 hover:text-orange-200"
+            href="https://dragonball-api.com/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            >dragonball-api.com</a
+          >
+        </p>
+      </div>
+      <nav class="flex gap-2" aria-label="โหมด">
+        <button
+          type="button"
+          class="rounded-lg px-4 py-2 text-sm font-medium transition"
+          [class.bg-orange-500]="viewMode() === 'characters'"
+          [class.text-zinc-950]="viewMode() === 'characters'"
+          [class.bg-zinc-800]="viewMode() !== 'characters'"
+          [class.text-zinc-300]="viewMode() !== 'characters'"
+          (click)="setView('characters')"
+        >
+          ตัวละคร
+        </button>
+        <button
+          type="button"
+          class="rounded-lg px-4 py-2 text-sm font-medium transition"
+          [class.bg-sky-500]="viewMode() === 'planets'"
+          [class.text-zinc-950]="viewMode() === 'planets'"
+          [class.bg-zinc-800]="viewMode() !== 'planets'"
+          [class.text-zinc-300]="viewMode() !== 'planets'"
+          (click)="setView('planets')"
+        >
+          ดาวเคราะห์
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl space-y-8 px-4 py-8">
+    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-xl shadow-black/40">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <label class="block flex-1">
+          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500">ค้นหาตามชื่อ</span>
+          <input
+            type="search"
+            class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm outline-none ring-orange-500/40 placeholder:text-zinc-600 focus:border-orange-500/60 focus:ring-2"
+            placeholder="พิมพ์ชื่อแล้วรอสักครู่..."
+            (input)="onSearchInput($any($event.target).value)"
+          />
+        </label>
+
+        @if (viewMode() === 'planets') {
+          <div class="flex flex-wrap gap-2">
+            <span class="mb-1 w-full text-xs font-medium uppercase tracking-wide text-zinc-500 lg:mb-0 lg:w-auto lg:self-center"
+              >สถานะดาว</span
+            >
+            <button
+              type="button"
+              class="rounded-lg px-3 py-2 text-sm"
+              [class.bg-zinc-700]="planetDestroyed() === undefined"
+              [class.text-white]="planetDestroyed() === undefined"
+              [class.bg-zinc-800]="planetDestroyed() !== undefined"
+              [class.text-zinc-400]="planetDestroyed() !== undefined"
+              (click)="setPlanetDestroyed(undefined)"
+            >
+              ทั้งหมด
+            </button>
+            <button
+              type="button"
+              class="rounded-lg px-3 py-2 text-sm"
+              [class.bg-red-600]="planetDestroyed() === true"
+              [class.text-white]="planetDestroyed() === true"
+              [class.bg-zinc-800]="planetDestroyed() !== true"
+              [class.text-zinc-400]="planetDestroyed() !== true"
+              (click)="setPlanetDestroyed(true)"
+            >
+              ถูกทำลาย
+            </button>
+            <button
+              type="button"
+              class="rounded-lg px-3 py-2 text-sm"
+              [class.bg-emerald-600]="planetDestroyed() === false"
+              [class.text-white]="planetDestroyed() === false"
+              [class.bg-zinc-800]="planetDestroyed() !== false"
+              [class.text-zinc-400]="planetDestroyed() !== false"
+              (click)="setPlanetDestroyed(false)"
+            >
+              ยังอยู่
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (listError()) {
+        <p class="mt-4 rounded-lg border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+          {{ listError() }}
+        </p>
+      }
+    </section>
+
+    <section class="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div>
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h2 class="text-lg font-medium text-zinc-200">
+            @if (viewMode() === 'characters') {
+              รายการตัวละคร
+            } @else {
+              รายการดาวเคราะห์
+            }
+          </h2>
+          @if (listLoading()) {
+            <span class="text-sm text-zinc-500">กำลังโหลด…</span>
+          }
+        </div>
+
+        @if (viewMode() === 'characters' && charactersList(); as cl) {
+          <ul class="grid gap-4 sm:grid-cols-2">
+            @for (c of cl.items; track c.id) {
+              <li
+                class="group flex gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 transition hover:border-orange-500/40"
+              >
+                <button
+                  type="button"
+                  class="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950"
+                  (click)="toggleSelectCharacter(c)"
+                  [attr.aria-pressed]="isSelected(c.id)"
+                  title="แตะเพื่อเลือก / ยกเลิก"
+                >
+                  <img
+                    [src]="c.image"
+                    [alt]="c.name"
+                    class="h-full w-full object-cover object-top transition group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  @if (isSelected(c.id)) {
+                    <span
+                      class="absolute right-1 top-1 rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-zinc-950"
+                      >เลือก</span
+                    >
+                  }
+                </button>
+                <div class="min-w-0 flex-1">
+                  <h3 class="truncate font-semibold text-zinc-100">{{ c.name }}</h3>
+                  <p class="mt-1 line-clamp-2 text-xs text-zinc-500">{{ c.race }} · {{ c.affiliation }}</p>
+                  <p class="mt-2 line-clamp-2 text-xs text-zinc-400">{{ c.description }}</p>
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="rounded-lg px-3 py-1.5 text-xs font-medium"
+                      [class.bg-orange-500]="isSelected(c.id)"
+                      [class.text-zinc-950]="isSelected(c.id)"
+                      [class.bg-zinc-800]="!isSelected(c.id)"
+                      [class.text-zinc-300]="!isSelected(c.id)"
+                      [disabled]="selectionLoadingId() === c.id"
+                      (click)="toggleSelectCharacter(c)"
+                    >
+                      @if (selectionLoadingId() === c.id) {
+                        กำลังโหลด…
+                      } @else if (isSelected(c.id)) {
+                        ยกเลิกการเลือก
+                      } @else {
+                        เลือกแสดงด้านขวา
+                      }
+                    </button>
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+
+          @if (showPagination() && cl.meta.totalPages > 1) {
+            <div class="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-40"
+                [disabled]="page() <= 1 || listLoading()"
+                (click)="goPage(-1)"
+              >
+                ก่อนหน้า
+              </button>
+              <span class="text-sm text-zinc-500">
+                หน้า {{ cl.meta.currentPage }} / {{ cl.meta.totalPages }}
+              </span>
+              <button
+                type="button"
+                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-40"
+                [disabled]="cl.meta.currentPage >= cl.meta.totalPages || listLoading()"
+                (click)="goPage(1)"
+              >
+                ถัดไป
+              </button>
+            </div>
+          }
+        } @else if (viewMode() === 'planets' && planetsList(); as pl) {
+          <ul class="space-y-3">
+            @for (p of pl.items; track p.id) {
+              <li class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
+                <button
+                  type="button"
+                  class="flex w-full gap-4 p-4 text-left transition hover:bg-zinc-800/50"
+                  (click)="togglePlanetExpand(p.id)"
+                  [attr.aria-expanded]="expandedPlanetId() === p.id"
+                >
+                  <span class="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-700">
+                    <img [src]="p.image" [alt]="p.name" class="h-full w-full object-cover" loading="lazy" />
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex items-center gap-2">
+                      <span class="font-semibold text-zinc-100">{{ p.name }}</span>
+                      @if (p.isDestroyed) {
+                        <span class="rounded bg-red-600/90 px-2 py-0.5 text-[10px] font-semibold uppercase text-white"
+                          >ถูกทำลาย</span
+                        >
+                      } @else {
+                        <span
+                          class="rounded bg-emerald-700/80 px-2 py-0.5 text-[10px] font-semibold uppercase text-white"
+                          >อยู่</span
+                        >
+                      }
+                    </span>
+                    @if (p.description) {
+                      <span class="mt-1 line-clamp-2 block text-xs text-zinc-500">{{ p.description }}</span>
+                    }
+                    <span class="mt-2 block text-xs text-sky-400">
+                      {{ expandedPlanetId() === p.id ? 'ซ่อนรายชื่อ' : 'ดูตัวละครบนดาว' }}
+                    </span>
+                  </span>
+                </button>
+
+                @if (expandedPlanetId() === p.id) {
+                  <div class="border-t border-zinc-800 bg-zinc-950/50 px-4 py-3">
+                    @if (planetDetailLoading()) {
+                      <p class="text-sm text-zinc-500">กำลังโหลดรายชื่อ…</p>
+                    } @else if (planetDetail(); as pd) {
+                      @if (pd.id !== p.id) {
+                        <p class="text-sm text-zinc-500">กำลังสลับดาว…</p>
+                      } @else {
+                      <p class="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        ตัวละครบน {{ pd.name }} ({{ pd.characters.length }})
+                      </p>
+                      <ul class="flex flex-wrap gap-2">
+                        @for (rc of pd.characters; track rc.id) {
+                          <li
+                            class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs"
+                          >
+                            <img [src]="rc.image" [alt]="rc.name" class="h-8 w-6 rounded object-cover" />
+                            <span class="max-w-[140px] truncate">{{ rc.name }}</span>
+                          </li>
+                        }
+                      </ul>
+                      }
+                    } @else {
+                      <p class="text-sm text-zinc-500">ไม่มีข้อมูลเพิ่มเติม</p>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (showPagination() && pl.meta.totalPages > 1) {
+            <div class="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-40"
+                [disabled]="page() <= 1 || listLoading()"
+                (click)="goPage(-1)"
+              >
+                ก่อนหน้า
+              </button>
+              <span class="text-sm text-zinc-500">
+                หน้า {{ pl.meta.currentPage }} / {{ pl.meta.totalPages }}
+              </span>
+              <button
+                type="button"
+                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-40"
+                [disabled]="pl.meta.currentPage >= pl.meta.totalPages || listLoading()"
+                (click)="goPage(1)"
+              >
+                ถัดไป
+              </button>
+            </div>
+          }
+        } @else if (!listLoading()) {
+          <p class="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-sm text-zinc-500">
+            ไม่มีรายการ
+          </p>
+        }
+      </div>
+
+      <aside class="lg:sticky lg:top-6 lg:self-start">
+        <div class="rounded-2xl border border-orange-500/25 bg-zinc-900/80 p-4 shadow-lg">
+          <h2 class="text-base font-semibold text-orange-300">ตัวละครที่เลือก</h2>
+          <p class="mt-1 text-xs text-zinc-500">เลือกจากแท็บตัวละคร แล้วดูรายละเอียดด้านล่าง</p>
+
+          @if (selectedCharacters().length === 0) {
+            <p class="mt-6 text-center text-sm text-zinc-600">ยังไม่มีรายการ</p>
+          } @else {
+            <ul class="mt-4 max-h-[70vh] space-y-6 overflow-y-auto pr-1">
+              @for (s of selectedCharacters(); track s.id) {
+                <li class="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                  <div class="flex gap-3">
+                    <img
+                      [src]="s.image"
+                      [alt]="s.name"
+                      class="h-24 w-16 shrink-0 rounded-lg object-cover object-top"
+                    />
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-start justify-between gap-2">
+                        <h3 class="font-semibold leading-tight text-zinc-100">{{ s.name }}</h3>
+                        <button
+                          type="button"
+                          class="shrink-0 rounded bg-zinc-800 px-2 py-1 text-[10px] text-zinc-400 hover:bg-red-900/50 hover:text-red-200"
+                          (click)="removeSelected(s.id)"
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                      <p class="mt-1 text-[11px] text-zinc-500">{{ s.race }} · {{ s.gender }}</p>
+                      <p class="mt-2 text-xs leading-relaxed text-zinc-400">{{ s.description }}</p>
+                    </div>
+                  </div>
+
+                  @if (s.originPlanet) {
+                    <div class="mt-3 rounded-lg border border-sky-500/20 bg-sky-950/30 px-3 py-2 text-xs">
+                      <span class="font-medium text-sky-300">ดาวต้นกำเนิด</span>
+                      <span class="mt-0.5 block text-zinc-300">{{ s.originPlanet.name }}</span>
+                    </div>
+                  }
+
+                  @if (s.transformations.length) {
+                    <div class="mt-3">
+                      <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">การแปลงร่าง</p>
+                      <ul class="space-y-2">
+                        @for (t of s.transformations; track t.id) {
+                          <li class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/80 px-2 py-1.5">
+                            @if (t.image) {
+                              <img [src]="t.image" [alt]="t.name" class="h-9 w-9 rounded object-cover" />
+                            }
+                            <div class="min-w-0 text-xs">
+                              <p class="truncate font-medium text-zinc-200">{{ t.name }}</p>
+                              <p class="truncate text-zinc-500">{{ t.ki }}</p>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </aside>
+    </section>
+  </main>
+</div>
